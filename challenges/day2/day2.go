@@ -2,14 +2,15 @@ package day2
 
 import (
 	"bufio"
-	"errors"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 )
 
-func Solve() int {
+func Solve() (int, int) {
 	// open file
-	f, err := os.Open("./challenges/day1/resources/input.txt")
+	f, err := os.Open("./challenges/day2/resources/input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -19,52 +20,101 @@ func Solve() int {
 	// new scanner to read lines individually
 	scanner := bufio.NewScanner(f)
 
-	calibrationSum := 0
+	possibleGamesIDSum := 0
+	powerSum := 0
+	currentID := 1
 
 	for scanner.Scan() {
-		calibrationValue := calcLineCalibrationValue(scanner.Text())
-		calibrationSum += calibrationValue
-	}
+		line := scanner.Text()
 
-	return calibrationSum
+		if checkPossibleGame(line) {
+			possibleGamesIDSum += currentID
+		}
+
+		powerSum += checkGamePower(line)
+
+		currentID++
+	}
+	return possibleGamesIDSum, powerSum
 }
 
-func calcLineCalibrationValue(line string) int {
-	var calibrationDigits []int
+func checkPossibleGame(line string) bool {
+	// split string after :
+	game := strings.Split(line, ":")[1]
 
-	// iterate over each rune, and if it's a number, append it to calibrationDigits
-	for _, char := range line {
-		num, charErr := CharToNum(char)
-		if charErr != nil {
-			// do nothing
-		} else {
-			// append number to calibrationDigits
-			calibrationDigits = append(calibrationDigits, num)
+	pulls := strings.Split(game, ";")
+	//fmt.Println(pulls)
+
+	for _, draw := range pulls {
+		kek := strings.Split(draw, ",")
+		kek = Map(kek, func(item string) string { return strings.Replace(item, " ", "", -1) })
+
+		for _, fuck := range kek {
+			if strings.Contains(fuck, "red") {
+				numGrabbed, _ := strconv.Atoi(strings.ReplaceAll(fuck, "red", ""))
+				if numGrabbed > 12 {
+					return false
+				}
+			} else if strings.Contains(fuck, "green") {
+				numGrabbed, _ := strconv.Atoi(strings.ReplaceAll(fuck, "green", ""))
+				if numGrabbed > 13 {
+					return false
+				}
+			} else if strings.Contains(fuck, "blue") {
+				numGrabbed, _ := strconv.Atoi(strings.ReplaceAll(fuck, "blue", ""))
+				if numGrabbed > 14 {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+func checkGamePower(line string) int {
+	// split string after :
+	game := strings.Split(line, ":")[1]
+
+	pulls := strings.Split(game, ";")
+	//fmt.Println(pulls)
+
+	minRed := 0
+	minGreen := 0
+	minBlue := 0
+
+	for _, draw := range pulls {
+		kek := strings.Split(draw, ",")
+		kek = Map(kek, func(item string) string { return strings.Replace(item, " ", "", -1) })
+
+		for _, fuck := range kek {
+			if strings.Contains(fuck, "red") {
+				numGrabbed, _ := strconv.Atoi(strings.ReplaceAll(fuck, "red", ""))
+				if numGrabbed > minRed {
+					minRed = numGrabbed
+				}
+			} else if strings.Contains(fuck, "green") {
+				numGrabbed, _ := strconv.Atoi(strings.ReplaceAll(fuck, "green", ""))
+				if numGrabbed > minGreen {
+					minGreen = numGrabbed
+				}
+			} else if strings.Contains(fuck, "blue") {
+				numGrabbed, _ := strconv.Atoi(strings.ReplaceAll(fuck, "blue", ""))
+				if numGrabbed > minBlue {
+					minBlue = numGrabbed
+				}
+			}
 		}
 	}
 
-	if len(calibrationDigits) > 0 {
-		// first digit is calibrationDigits[0]
-		firstDigit := calibrationDigits[0] * 10
-
-		// second digit is calibrationDigits[-1]
-		lastDigit := calibrationDigits[len(calibrationDigits)-1] // does empty array break here?
-
-		return firstDigit + lastDigit
-	}
-	return 0
+	return minRed * minGreen * minBlue
 }
 
-// https://codereview.stackexchange.com/a/122931
-// nice solution to determining if a rune is a number, and throwing error if not.
-// thanks peterSO!
+// Generic Map function pulled here: https://stackoverflow.com/a/72498530
 
-var ErrRuneNotInt = errors.New("type: rune was not int")
-
-func CharToNum(r rune) (int, error) {
-	// This is just ascii number comparison, then subtracting 0's ascii value from the resulting int rune's ascii value
-	if '0' <= r && r <= '9' {
-		return int(r) - '0', nil
+func Map[T, V any](ts []T, fn func(T) V) []V {
+	result := make([]V, len(ts))
+	for i, t := range ts {
+		result[i] = fn(t)
 	}
-	return 0, ErrRuneNotInt
+	return result
 }
