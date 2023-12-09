@@ -9,7 +9,7 @@ import (
 
 func Solve() int {
 	// open file
-	f, err := os.Open("./resources/input.txt")
+	f, err := os.Open("./challenges/day1/resources/input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
